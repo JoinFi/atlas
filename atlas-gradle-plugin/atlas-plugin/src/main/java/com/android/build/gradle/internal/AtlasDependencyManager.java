@@ -220,8 +220,6 @@ import com.android.annotations.NonNull;
 import com.android.annotations.Nullable;
 import com.android.build.gradle.internal.dependency.VariantDependencies;
 import com.android.builder.dependency.level2.AndroidDependency;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Collections2;
 import com.google.common.collect.Iterables;
 import com.taobao.android.builder.AtlasBuildContext;
 import com.taobao.android.builder.dependency.AtlasDependencyTree;
@@ -231,16 +229,12 @@ import com.taobao.android.builder.extension.TBuildType;
 import com.taobao.android.builder.tasks.incremental.ApDependencies;
 import com.taobao.android.builder.tools.PluginTypeUtils;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier;
 import org.gradle.api.artifacts.result.ResolvedComponentResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static com.google.common.base.Strings.isNullOrEmpty;
 
 /**
  * A manager to resolve configuration dependencies.
@@ -314,49 +308,12 @@ public class AtlasDependencyManager extends DependencyManager {
             return null;
         }
 
-        File baseApFile = getBaseApFile(project, tBuildType);
+        File baseApFile = ApDependencies.getBaseApFile(project, tBuildType);
         if (baseApFile == null) {
             return null;
         }
 
         return new ApDependencies(project, baseApFile);
-    }
-
-    private static File getBaseApFile(Project project, TBuildType tBuildType) {
-        //重用上一次构建baseAp文件
-        //File apBaseFile = Iterables.getOnlyElement(
-        //    FileUtils.find(FileUtils.join(project.getBuildDir(), FD_OUTPUTS), Pattern.compile("\\.ap$")), null);
-        File apBaseFile = null;
-        if (apBaseFile == null) {
-            File buildTypeBaseApFile = tBuildType.getBaseApFile();
-            if (buildTypeBaseApFile != null) {
-                if (!buildTypeBaseApFile.isFile()) {
-                    throw new IllegalStateException("AP is missing on '" + buildTypeBaseApFile + "'");
-                }
-                apBaseFile = buildTypeBaseApFile;
-            } else if (!isNullOrEmpty(tBuildType.getBaseApDependency())) {
-                String apDependency = tBuildType.getBaseApDependency();
-                // Preconditions.checkNotNull(apDependency,
-                //                            "You have to specify the baseApFile property or the baseApDependency
-                // dependency");
-                Dependency dependency = project.getDependencies().create(apDependency);
-                Configuration configuration = project.getConfigurations().detachedConfiguration(dependency);
-                configuration.setTransitive(false);
-                apBaseFile = Iterables.getOnlyElement(Collections2.filter(configuration.getFiles(),
-                                                                          new Predicate<File>() {
-                                                                              @Override
-                                                                              public boolean apply(
-                                                                                  @Nullable File file) {
-                                                                                  return file.getName().endsWith(".ap");
-                                                                              }
-                                                                          }));
-            } else {
-                // throw new IllegalStateException("AP is missing");
-            }
-        } else {
-            tBuildType.setBaseApFile(apBaseFile);
-        }
-        return apBaseFile;
     }
 
     @Override

@@ -152,6 +152,11 @@ public class PullBaseApkTask extends BaseTask {
         public void execute(PullBaseApkTask task) {
 
             super.execute(task);
+            File baseApFile = ApDependencies.getBaseApFile(scope.getGlobalScope().getProject(),
+                                                           appVariantContext.getBuildType());
+            if (baseApFile != null) {
+                task.setEnabled(false);
+            }
             BaseVariantData<? extends BaseVariantOutputData> variantData = scope.getVariantScope().getVariantData();
             final GradleVariantConfiguration variantConfiguration = variantData.getVariantConfiguration();
             task.appVariantContext = appVariantContext;
