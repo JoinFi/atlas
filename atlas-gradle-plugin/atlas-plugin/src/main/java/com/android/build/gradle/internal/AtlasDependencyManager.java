@@ -228,6 +228,8 @@ import com.taobao.android.builder.extension.AtlasExtension;
 import com.taobao.android.builder.extension.TBuildType;
 import com.taobao.android.builder.tasks.incremental.ApDependencies;
 import com.taobao.android.builder.tools.PluginTypeUtils;
+import com.taobao.android.builder.tools.ideaplugin.AwoPropHandler;
+import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvedArtifact;
@@ -297,17 +299,27 @@ public class AtlasDependencyManager extends DependencyManager {
         return new HashSet<>(0);
     }
 
+    // 增量编译修剪依赖
     private static ApDependencies resolveApDependencies(Project project, String variantDepsName) {
         AtlasExtension atlasExtension = project.getExtensions().getByType(AtlasExtension.class);
         if (!atlasExtension.getTBuildConfig().isIncremental()) {
             return null;
         }
 
+        // Ap配置
         TBuildType tBuildType = (TBuildType)atlasExtension.getBuildTypes().findByName(variantDepsName);
         if (tBuildType == null) {
             return null;
         }
 
+        // 下载Ap
+        try {
+            new AwoPropHandler().process(tBuildType, atlasExtension.getBundleConfig());
+        } catch (Exception e) {
+            throw new GradleException("process awo exception", e);
+        }
+
+        // 最终Ap文件
         File baseApFile = ApDependencies.getBaseApFile(project, tBuildType);
         if (baseApFile == null) {
             return null;
